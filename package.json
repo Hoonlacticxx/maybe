@@ -1,24 +1,17 @@
 {
-  "name": "whatsappbot",
+  "name": "whatsapp-bot",
   "version": "1.0.0",
-  "description": "Bot que reenvía automáticamente fotos 'view once' de WhatsApp a tu chat personal",
+  "description": "Bot que reenvía automáticamente fotos 'view once' de WhatsApp a tu chat personal, con interfaz QR web",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "whatsapp",
-    "baileys",
-    "bot",
-    "view-once"
-  ],
-  "author": "Walter",
-  "license": "ISC",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.8",
+    "express": "^4.19.2",
     "pino": "^8.16.2",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode": "^1.5.4"
   }
 }
