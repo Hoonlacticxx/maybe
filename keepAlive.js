@@ -1,5 +1,6 @@
 import express from "express";
 import { writeFileSync } from "fs";
+import path from "path";
 
 let lastQr = null;
 
@@ -45,6 +46,11 @@ export function setQr(qrDataUrl) {
 export function keepAlive() {
   const app = express();
   app.use(express.static("public"));
+
+  // Redirigir "/" a qr.html
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "public/qr.html"));
+  });
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`🌐 Servidor web activo en puerto ${PORT}`));
