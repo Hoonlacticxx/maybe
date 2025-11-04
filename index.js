@@ -1,6 +1,7 @@
-// index.js
-import qrcode from "qrcode-terminal";
+import qrcode from "qrcode";
 import crypto from "crypto";
+import pino from "pino";
+import { Boom } from "@hapi/boom";
 import {
   makeWASocket,
   useMultiFileAuthState,
@@ -8,23 +9,14 @@ import {
   DisconnectReason,
   Browsers,
 } from "@whiskeysockets/baileys";
-import { keepAlive } from "./keepAlive.js";
-import { Boom } from "@hapi/boom";
-import pino from "pino";
+import { keepAlive, setQr } from "./keepAlive.js";
 
-// ✅ Asegurar que crypto esté disponible globalmente (solo si no lo está)
+// Asegurar crypto disponible globalmente
 if (typeof globalThis.crypto === "undefined") {
   globalThis.crypto = crypto;
 }
 
 async function connectToWA() {
-  const version = process.versions.node.split(".")[0];
-  if (+version < 18) {
-    console.log("❌ Necesitas Node.js versión 18 o superior.");
-    return;
-  }
-
-  // 📁 Cargar o crear sesión
   const { state, saveCreds } = await useMultiFileAuthState("./auth_info_baileys");
 
   const sock = makeWASocket({
@@ -33,20 +25,25 @@ async function connectToWA() {
     browser: Browsers.appropriate("Chrome"),
   });
 
-  // 🔄 Manejar cambios de conexión
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    // ✅ Mostrar QR manualmente
     if (qr) {
-      console.log("📱 Escanea este QR con tu WhatsApp (Dispositivos Vinculados):");
-      qrcode.generate(qr, { small: true });
+      const qrImage = await qrcode.toDataURL(qr);
+      setQr(qrImage);
+      console.log("📲 Abre tu navegador y escanea el QR en: https://tu-bot.onrender.com");
+    }
+
+    if (connection === "open") {
+      console.log("✅ Bot conectado correctamente a WhatsApp.");
+      setQr(null);
     }
 
     if (connection === "close") {
-      const statusCode = (lastDisconnect?.error instanceof Boom)
-        ? lastDisconnect.error.output?.statusCode
-        : null;
+      const statusCode =
+        lastDisconnect?.error instanceof Boom
+          ? lastDisconnect.error.output?.statusCode
+          : null;
 
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
@@ -56,13 +53,6 @@ async function connectToWA() {
         setTimeout(connectToWA, 3000);
       } else {
         console.log("🚫 Sesión cerrada permanentemente. Borra ./auth_info_baileys para volver a vincular.");
-      }
-    } else if (connection === "open") {
-      console.log("✅ Bot conectado correctamente a WhatsApp.");
-      try {
-        keepAlive();
-      } catch (e) {
-        console.warn("Error en keepAlive:", e.message);
       }
     }
   });
@@ -100,6 +90,7 @@ async function connectToWA() {
   sock.ev.on("creds.update", saveCreds);
 }
 
+keepAlive();
 await connectToWA();
 
 // 🛡️ Manejo de errores globales
