@@ -20,7 +20,7 @@ if (typeof globalThis.crypto === "undefined") {
 async function connectToWA() {
   const version = process.versions.node.split(".")[0];
   if (+version < 18) {
-    console.log("Necesitas Node.js versión 18 o superior.");
+    console.log("❌ Necesitas Node.js versión 18 o superior.");
     return;
   }
 
@@ -30,13 +30,18 @@ async function connectToWA() {
   const sock = makeWASocket({
     logger: pino({ level: "silent" }),
     auth: state,
-    printQRInTerminal: true, // 👈 esto mostrará el QR directo en la consola
     browser: Browsers.appropriate("Chrome"),
   });
 
   // 🔄 Manejar cambios de conexión
   sock.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect, qr } = update;
+
+    // ✅ Mostrar QR manualmente
+    if (qr) {
+      console.log("📱 Escanea este QR con tu WhatsApp (Dispositivos Vinculados):");
+      qrcode.generate(qr, { small: true });
+    }
 
     if (connection === "close") {
       const statusCode = (lastDisconnect?.error instanceof Boom)
@@ -45,12 +50,12 @@ async function connectToWA() {
 
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
-      console.log("Conexión cerrada:", lastDisconnect?.error?.toString?.() ?? lastDisconnect);
+      console.log("⚠️ Conexión cerrada:", lastDisconnect?.error?.toString?.() ?? lastDisconnect);
       if (shouldReconnect) {
-        console.log("Reconectando...");
+        console.log("🔁 Reconectando...");
         setTimeout(connectToWA, 3000);
       } else {
-        console.log("⚠️ Sesión cerrada permanentemente. Borra la carpeta ./auth_info_baileys para volver a vincular.");
+        console.log("🚫 Sesión cerrada permanentemente. Borra ./auth_info_baileys para volver a vincular.");
       }
     } else if (connection === "open") {
       console.log("✅ Bot conectado correctamente a WhatsApp.");
@@ -92,11 +97,7 @@ async function connectToWA() {
     }
   });
 
-  // Guardar credenciales cuando cambien
   sock.ev.on("creds.update", saveCreds);
-
-  // Capturar errores de conexión
-  sock.ev.on("connection.error", (err) => console.error("Socket connection error:", err));
 }
 
 await connectToWA();
