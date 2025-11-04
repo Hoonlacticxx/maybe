@@ -1,4 +1,5 @@
 // index.js
+import qrcode from "qrcode-terminal";
 import crypto from "crypto";
 if (!globalThis.crypto) {
   globalThis.crypto = crypto;
