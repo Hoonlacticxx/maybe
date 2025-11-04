@@ -1,20 +1,23 @@
-# Utilizar una imagen base de Node.js
-FROM node:lts-buster
+# Imagen base con Node 18 o superior (requerido por Baileys)
+FROM node:18
 
-# Establecer el directorio de trabajo dentro del contenedor
-WORKDIR /usr/src/app
+# Directorio de trabajo
+WORKDIR /app
 
-# Copiar los archivos package.json
-COPY package.json .
+# Copiar archivos de dependencias
+COPY package*.json ./
 
-# Instalar las dependencias
-RUN npm install
+# Instalar dependencias
+RUN npm install --production
 
-# Copiar el resto de los archivos de la aplicación
+# Copiar el resto de los archivos del proyecto
 COPY . .
 
-# Exponer el puerto en el que corre la aplicación
+# Exponer el puerto (Render usará este valor)
 EXPOSE 3000
 
-# Comando para ejecutar la aplicación
-CMD ["node", "index.js"]
+# Variable de entorno para Render
+ENV PORT=3000
+
+# Comando para iniciar el bot
+CMD ["npm", "start"]
